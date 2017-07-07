@@ -59,3 +59,11 @@ class DatabaseHandler():
         cursor.execute('''UPDATE Sample SET Lable=? WHERE SampleHash LIKE ?''', (lable, sample_id))
         self.conn.commit()
         return cursor.rowcount
+
+    def recreats_table_samples(self):
+        cursor=self.conn.cursor()
+        cursor.execute('''DROP TABLE Sample''')
+        cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS Sample(id INTEGER PRIMARY KEY,
+                                       SampleHash TEXT,Lable TEXT)
+                ''')

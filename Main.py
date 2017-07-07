@@ -624,7 +624,7 @@ def run_whole_process(repo, dump_Method_dir):
 
 def menu_select():
     db = DatabaseHandler()
-    repo = '/Users/midnightgeek/Repo/l1/'
+    repo = '/Users/midnightgeek/Repo/l14/'
     dump_Method_dir = '/Users/midnightgeek/Tools/test2'
     print '********* DataSet Generator *********'
     print 'Enter 1 For Run All Progress'
@@ -633,7 +633,7 @@ def menu_select():
     print 'Enter 4 For Clear Samples Table'
     menu = raw_input("Enter Number : ")
     if menu == '1':
-        run_whole_process()
+        run_whole_process(repo, dump_Method_dir)
     elif menu == '2':
         fill_samples_table(repo, dump_Method_dir)
     elif menu == '3':
