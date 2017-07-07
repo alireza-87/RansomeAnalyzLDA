@@ -1,0 +1,6 @@
+androguard==3.0.1
+numpy==1.13.1
+scikit-learn==0.18.2
+scipy==0.19.1
+sklearn==0.0
+XlsxWriter==0.9.8
