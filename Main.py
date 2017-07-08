@@ -5,6 +5,7 @@ import urllib2
 from os import walk
 import os
 import time
+from PIL import Image
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from DataBaseHandler import DatabaseHandler
 from androdd import dump_all_method
@@ -153,6 +154,69 @@ def write_arff(dataset, class1, class2):
                     data_fp.write("0" + ",")
         data_fp.write("bin")
         data_fp.write("\n")
+
+def capture_image(repo,dump_method_dir):
+    db = DatabaseHandler()
+    samples = db.select_sample_all()
+    vector = []
+    sample = []
+    sample_name = []
+    sample_1 = []
+    seen = set()
+    for item in samples:
+        try:
+            # Generate Opcode Seq for every sample
+            dump_all_method(repo + item[1], dump_method_dir)
+            opcode_sequence = check_opcode(dump_method_dir)
+            opcode_list1 = check_opcode2(dump_method_dir)
+            # Add opcode seq to class belong
+            if item[1].endswith(".apk"):
+                sample.append(opcode_sequence)
+                sample_1.append(opcode_list1)
+                sample_name.append(item[1])
+            for item in opcode_sequence:
+                if item not in seen:
+                    vector.append(item)
+                    seen.add(item)
+        except Exception as e:
+            print e
+
+    sample_class = []
+    sample_class = func_weight_p_op1_op2(sample, sample_1, vector)
+    final_op_set = []
+    opcode_bank = {}
+    index_helper_x = 0
+    seen = set()
+    for item in sample_class:
+        for key, value in item.iteritems():
+            splitter = key.strip().split()
+            if splitter[0] not in seen:
+                final_op_set.append(splitter[0])
+                opcode_bank[splitter[0]] = index_helper_x
+                index_helper_x = index_helper_x + 1
+                seen.add(splitter[0])
+            if splitter[1] not in seen:
+                final_op_set.append(splitter[1])
+                opcode_bank[splitter[1]] = index_helper_x
+                index_helper_x = index_helper_x + 1
+                seen.add(splitter[1])
+    index_name = 0
+    for item in sample_class:
+        image = np.array([[0.0 for j in range(256)] for i in range(256)])
+        for opc_i in final_op_set:
+            for opc_j in final_op_set:
+                x = opcode_bank[opc_i]
+                y = opcode_bank[opc_j]
+                key = str(str(opc_i) + " " + str(opc_j))
+                if key in item:
+                    image[x][y] = item[str(opc_i) + " " + str(opc_j)]
+                else:
+                    image[x][y] = 0
+        rescaled = (255.0 / image.max() * (image - image.min())).astype(np.uint8)
+        im = Image.fromarray(rescaled)
+        im.show()
+        im.save(str(sample_name[index_name])+'.png', 'PNG')
+        index_name = index_name + 1
 
 
 def opcode_sequence_generator4(repo, dumpMethodDir):
@@ -624,13 +688,14 @@ def run_whole_process(repo, dump_Method_dir):
 
 def menu_select():
     db = DatabaseHandler()
-    repo = '/Users/midnightgeek/Repo/l14/'
+    repo = '/Users/midnightgeek/Repo/l15/'
     dump_Method_dir = '/Users/midnightgeek/Tools/test2'
     print '********* DataSet Generator *********'
     print 'Enter 1 For Run All Progress'
     print 'Enter 2 For Fill Samples Table'
     print 'Enter 3 For Lable Sample With VT Api'
     print 'Enter 4 For Clear Samples Table'
+    print 'Enter 5 For capture Image'
     menu = raw_input("Enter Number : ")
     if menu == '1':
         run_whole_process(repo, dump_Method_dir)
@@ -640,6 +705,9 @@ def menu_select():
         update_samples_label(repo)
     elif menu == '4':
         db.clear_table_samples()
+    elif menu == '5':
+        fill_samples_table(repo)
+        capture_image(repo,dump_Method_dir)
     else:
         print 'Wrong Number'
 
