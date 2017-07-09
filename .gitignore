@@ -219,4 +219,7 @@ pyvenv.cfg
 .venv
 pip-selfcheck.json
 # End of https://www.gitignore.io/api/linux,macos,python,windows,sublimetext,visualstudiocode
-DataBase\.db
+*.db
+
+*.png
+/.idea

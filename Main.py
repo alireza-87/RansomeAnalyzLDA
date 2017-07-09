@@ -155,6 +155,74 @@ def write_arff(dataset, class1, class2):
         data_fp.write("bin")
         data_fp.write("\n")
 
+
+def write_arff_n_opcode(dataset, class1, class2):
+    final_op_set = []
+    opcode_bank = {}
+    index_helper_x = 1
+    seen = set()
+    max_len = 0
+    for item in class1:
+        if len(item) > max_len:
+            max_len = len(item)
+        for key in item:
+            splitter = key.strip().split()
+            for x in range(0,len(splitter)):
+                if splitter[x] not in seen:
+                    final_op_set.append(splitter[x])
+                    opcode_bank[splitter[x]] = index_helper_x
+                    index_helper_x = index_helper_x + 1
+                    seen.add(splitter[x])
+    for item in class2:
+        if len(item) > max_len:
+            max_len = len(item)
+        for key in item:
+            splitter = key.strip().split()
+            for x in range(0,len(splitter)):
+                if splitter[x] not in seen:
+                    final_op_set.append(splitter[x])
+                    opcode_bank[splitter[x]] = index_helper_x
+                    index_helper_x = index_helper_x + 1
+                    seen.add(splitter[x])
+
+    data_fp = open(dataset, "w")
+    data_fp.write('''@RELATION OpcodeSequence
+           ''')
+    data_fp.write("\n")
+    for opc_i in final_op_set:
+        for opc_j in final_op_set:
+            name = str(opc_i) + str(opc_j)
+            data_fp.write("@ATTRIBUTE %s NUMERIC \n" % name)
+    data_fp.write("@ATTRIBUTE Class1 {mal,bin} \n")
+    data_fp.write("\n")
+    data_fp.write("@DATA")
+    data_fp.write("\n")
+
+    for item in class1:
+        for key in item:
+            splitter = key.strip().split()
+            for x in range(0,len(splitter)):
+                if splitter[x] in final_op_set:
+                    data_fp.write(str(opcode_bank[splitter[x]]) + ",")
+        if len(item) < max_len:
+            for x in range(len(item),max_len+1):
+                data_fp.write('0' + ",")
+        data_fp.write("mal")
+        data_fp.write("\n")
+
+    for item in class2:
+        for key in item:
+            splitter = key.strip().split()
+            for x in range(0,len(splitter)):
+                if splitter[x] in final_op_set:
+                    data_fp.write(str(opcode_bank[splitter[x]]) + ",")
+        if len(item) < max_len:
+            for x in range(len(item),max_len+1):
+                data_fp.write('0' + ",")
+        data_fp.write("bin")
+        data_fp.write("\n")
+
+
 def capture_image(repo,dump_method_dir):
     db = DatabaseHandler()
     samples = db.select_sample_all()
@@ -557,6 +625,42 @@ def opcode_sequence_generator4(repo, dumpMethodDir):
         row_index = row_index + 1
 
 
+def opcode_sequence_generator5(repo, dumpMethodDir):
+    db = DatabaseHandler()
+    samples = db.select_sample_all()
+    vector = []
+    sample_mal = []
+    sample_bin = []
+    sample_mal_1 = []
+    sample_bin_1 = []
+    sample_bin_name = []
+    sample_mal_name = []
+    seen = set()
+    for i in range(2,11):
+        for item in samples:
+            try:
+                # Generate Opcode Seq for every sample
+                dump_all_method(repo + item[1], dumpMethodDir)
+                opcode_sequence = check_opcode(dumpMethodDir)
+                # Add opcode seq to class belong
+                if item[1].startswith('bin_') and item[1].endswith(".apk"):
+                    sample_bin.append(opcode_sequence)
+                
+                    sample_bin_name.append(item[1])
+                elif item[1].endswith(".apk"):
+                    sample_mal.append(opcode_sequence)
+                
+                    sample_mal_name.append(item[1])
+                # Generate a Sequence banck
+                for item in opcode_sequence:
+                    if item not in seen:
+                        vector.append(item)
+                        seen.add(item)
+            except Exception as e:
+                print e
+        write_arff_n_opcode(repo +str(i)+ '_result.arff', sample_mal, sample_bin)
+
+
 def scan_with_virus_total(path, db=None):
     files = get_all_files_in_directory(path)
     for afile in files:
@@ -587,7 +691,7 @@ def parse(it, md5, verbose=True, jsondump=True):
         return it['positives']
 
 
-def check_opcode(path_to_dir):
+def check_opcode(path_to_dir, n=2):
     full_address = (path_to_dir).strip('\n')
 
     list_files = get_all_files_withpath_in_directory(full_address)
@@ -613,7 +717,24 @@ def check_opcode(path_to_dir):
 
     list_opcode_sequence = []
     for item in range(0, len(list_general) - 1):
-        list_opcode_sequence.append(list_general[item] + ' ' + list_general[item + 1])
+        if n==2:
+            list_opcode_sequence.append(list_general[item] + ' ' + list_general[item + 1])
+        elif n==3:
+            list_opcode_sequence.append(list_general[item] + ' ' + list_general[item + 1]+ ' ' + list_general[item + 2])
+        elif n==4:
+            list_opcode_sequence.append(list_general[item] + ' ' + list_general[item + 1]+ ' ' + list_general[item + 2]+' ' + list_general[item + 3])
+        elif n==5:
+            list_opcode_sequence.append(list_general[item] + ' ' + list_general[item + 1]+ ' ' + list_general[item + 2]+' ' + list_general[item + 3]+' ' + list_general[item + 4])
+        elif n==6:
+            list_opcode_sequence.append(list_general[item] + ' ' + list_general[item + 1]+ ' ' + list_general[item + 2]+' ' + list_general[item + 3]+' ' + list_general[item + 4]+' ' + list_general[item + 5])
+        elif n==7:
+            list_opcode_sequence.append(list_general[item] + ' ' + list_general[item + 1]+ ' ' + list_general[item + 2]+' ' + list_general[item + 3]+' ' + list_general[item + 4]+' ' + list_general[item + 5]+' ' + list_general[item + 6])
+        elif n==8:
+            list_opcode_sequence.append(list_general[item] + ' ' + list_general[item + 1]+ ' ' + list_general[item + 2]+' ' + list_general[item + 3]+' ' + list_general[item + 4]+' ' + list_general[item + 5]+' ' + list_general[item + 6]+' ' + list_general[item + 7])
+        elif n==9:
+            list_opcode_sequence.append(list_general[item] + ' ' + list_general[item + 1]+ ' ' + list_general[item + 2]+' ' + list_general[item + 3]+' ' + list_general[item + 4]+' ' + list_general[item + 5]+' ' + list_general[item + 6]+' ' + list_general[item + 7]+' ' + list_general[item + 8])
+        elif n==10:
+            list_opcode_sequence.append(list_general[item] + ' ' + list_general[item + 1]+ ' ' + list_general[item + 2]+' ' + list_general[item + 3]+' ' + list_general[item + 4]+' ' + list_general[item + 5]+' ' + list_general[item + 6]+' ' + list_general[item + 7]+' ' + list_general[item + 8]+' ' + list_general[item + 9])
     return list_opcode_sequence
 
 
@@ -681,6 +802,11 @@ def update_samples_label(repo):
                 time.sleep(120)
 
 
+def  n_opcode_progress(repo, dump_Method_dir):
+    fill_samples_table(repo)    
+    opcode_sequence_generator5(repo, dump_Method_dir)
+
+
 def run_whole_process(repo, dump_Method_dir):
     fill_samples_table(repo)
     opcode_sequence_generator4(repo, dump_Method_dir)
@@ -688,14 +814,15 @@ def run_whole_process(repo, dump_Method_dir):
 
 def menu_select():
     db = DatabaseHandler()
-    repo = '/Users/midnightgeek/Repo/l15/'
+    repo = '/Users/midnightgeek/Repo/11/l11/'
     dump_Method_dir = '/Users/midnightgeek/Tools/test2'
     print '********* DataSet Generator *********'
-    print 'Enter 1 For Run All Progress'
+    print 'Enter 1 For Run LDA'
     print 'Enter 2 For Fill Samples Table'
     print 'Enter 3 For Lable Sample With VT Api'
     print 'Enter 4 For Clear Samples Table'
     print 'Enter 5 For capture Image'
+    print 'Enter 6 For Run n-opcode'
     menu = raw_input("Enter Number : ")
     if menu == '1':
         run_whole_process(repo, dump_Method_dir)
@@ -708,6 +835,8 @@ def menu_select():
     elif menu == '5':
         fill_samples_table(repo)
         capture_image(repo,dump_Method_dir)
+    elif menu == '6':
+        n_opcode_progress(repo, dump_Method_dir)
     else:
         print 'Wrong Number'
 
